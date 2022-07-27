@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="memberMapper">
+
+	<resultMap id="memberResultSet" type="member">
+		<result column="MEMBER_NO" property="memberNo" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="MEMBER_PWD" property="memberPwd" />
+		<result column="MEMBER_NAME" property="memberName" />
+		<result column="GENDER" property="gender" />
+		<result column="BIRTHDAY" property="birthday" />
+		<result column="NICKNAME" property="nickname" />
+		<result column="INTRODUCE" property="introduce" />
+		<result column="PHONE" property="phone" />
+		<result column="BANK_NAME" property="bankName" />
+		<result column="ACCOUNT_NUMBER" property="accountNumber" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="REPORT_COUNT" property="reportCount" />
+		<result column="ENROLL_DATE" property="enrollDate" />
+		<result column="SELLER_YN" property="sellerYN" />
+		<result column="SELLER_REQUEST_YN" property="sellerRequestYN" />
+		<result column="STATUS" property="status" />
+		<result column="BLACKLIST_YN" property="blacklistYN" />
+	</resultMap>
+	 
+	<resultMap id="reservationResultSet" type="reservation">
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="ORDER_ID" property="orderId" />
+		<result column="ROOM_NO" property="roomNo" />
+		<result column="ROOM_TITLE" property="roomTitle" />
+		<result column="BED_TYPE" property="bedType" />
+		<result column="MEMBER_NO" property="memberNo" />
+		<result column="PEOPLE_COUNT" property="peopleCount" />
+		<result column="RESERVATION_NAME" property="reservationName" />
+		<result column="PAYLOAD" property="payload" />			
+		<result column="MEMBER_ID" property="memberWriter" />
+		<result column="SPACE_ROOM_TITLE" property="spaceRoomTitle" />
+		<result column="PAY_STATUS" property="payStatus" />		
+		<result column="APPROVE_DATE" property="approveDate" />
+		<result column="START_DATE" property="startDate" />
+		<result column="END_DATE" property="endDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		<result column="CHECK_IN_DATE" property="checkInDate" />		
+		<result column="CHECK_OUT_DATE" property="checkOutDate" />			
+		<result column="CANCEL_DATE" property="cancelDate" />
+		<result column="STATUS" property="status" />					
+		<result column="PRICE" property="price" />					
+		<result column="TID" property="tid" />					
+		<result column="payment_method" property="paymentMethod" />	
+		<result column="SPACE_TITLE" property="spaceTitle" />	
+	</resultMap>
+	
+	<resultMap id="likelistResultSet" type="likelist">
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		<result column="SPACE_NO" property="spaceNo" />
+	</resultMap>
+	
+	<resultMap id="hostRoomListResultSet" type="roomVO">
+		<result column="ROOM_NO" property="roomNo" />
+		<result column="ROOM_TITLE" property="roomTitle" />
+		<result column="BED_TYPE" property="bedType" />
+		<result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		<result column="SPACE_TITLE" property="spaceTitle" />
+		<result column="BED_COUNT" property="bedCount" />
+		<result column="STATUS" property="status" />
+		<result column="PAYSTATUS" property="payStatus" />
+		<result column="START_DATE" property="startDate" />
+		<result column="END_DATE" property="endDate" />
+		<result column="CANCEL_DATE" property="cancelDate" />
+		<result column="CHECK_OUT_DATE" property="checkOutDate" />
+		<result column="PEAKSEASON_PRICE" property="peakSeasonPrice" />
+		<result column="LOWSEASON_PRICE" property="lowSeasonPrice" />
+		<result column="CHECK_IN_DATE" property="checkInDate" />
+		<result column="PEOPLE_COUNT" property="peopleCount" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+	</resultMap>
+	
+	<resultMap id="reviewListResultSet" type="review">
+		<result column="REVIEW_NO" property="reviewNo" />
+		<result column="ORDER_ID" property="orderId" />
+		<result column="SPACE_TITLE" property="spaceTitle" />
+		<result column="ROOM_TITLE" property="roomTitle" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />		
+		<result column="REVIEW_CONTENT" property="reviewContent" />
+		<result column="REPORT_CONTENT" property="reportContent" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="REVIEW_STATUS" property="reviewStatus" />
+		<result column="GRADE" property="grade" />
+	</resultMap>
+	
+  	<!-- 로그인 (select) -->
+	<select id="loginMember" parameterType="member" resultMap="memberResultSet">
+		SELECT *
+		FROM MEMBER
+		WHERE MEMBER_ID = #{memberId}
+		  AND STATUS = 'N'
+	</select>
+	
+	<!-- 회원가입 (insert) -->
+	<insert id="insertMember" parameterType="member">
+		INSERT INTO MEMBER(MEMBER_NO
+						 , MEMBER_ID
+		                 , MEMBER_PWD
+		                 , BIRTHDAY
+		                 , NICKNAME
+		                 )
+		VALUES(seq_mno.nextval
+			 , #{memberId}
+		     , #{memberPwd}
+		     , #{birthday}
+		     , #{nickname})
+	</insert>
+	
+	<!-- 아이디 중복체크 (select) -->
+	<select id="idCheck" parameterType="String" resultType="_int">
+		SELECT COUNT(*)
+		FROM MEMBER
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+	
+	<!-- 닉네임 중복체크 (select) -->
+	<select id="nameCheck" parameterType="String" resultType="_int">
+		SELECT COUNT(*)
+		FROM MEMBER
+		WHERE NICKNAME= #{nickname}
+	</select>
+	
+	<!-- 비밀번호 재설정 (update) -->
+	<select id="pwdReset" parameterType="HashMap">
+		UPDATE MEMBER
+		SET MEMBER_PWD = #{changedPwd}
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+	
+	<select id="PwdCheck" parameterType="String" resultType="String">
+		SELECT MEMBER_PWD
+		FROM MEMBER
+		WHERE MEMBER_ID = #{checkId}
+	</select>
+	
+	<update id="updatePwd" parameterType="member">
+		UPDATE MEMBER
+	       SET MEMBER_PWD = #{memberPwd}
+	    WHERE MEMBER_ID =  #{memberId}
+	</update>
+	
+	<update id="updateMember" parameterType="member">
+		UPDATE MEMBER
+		   SET NICKNAME = #{nickname}
+			 , GENDER = #{gender}
+			 , PHONE = #{phone}
+			 , INTRODUCE = #{introduce}
+			 <if test="originName != null and changeName != null">
+				 , ORIGIN_NAME = #{originName}
+				 , CHANGE_NAME = #{changeName}
+			 </if>
+		WHERE MEMBER_ID = #{memberId}
+	</update>
+	
+	<update id="deleteMember" parameterType="member">
+		UPDATE MEMBER
+		   SET STATUS = 'Y'
+		WHERE MEMBER_ID = #{memberId} 
+	</update>
+	
+	<select id="MyReservationListCount" resultType="_int">		
+		SELECT COUNT(*)
+		FROM RESERVATION R
+		JOIN MEMBER M ON (M.MEMBER_NO = R.MEMBER_NO)
+		WHERE MEMBER_ID = #{memberId}
+		  AND M.STATUS = 'N'
+	</select>
+	
+	<select id="MyReservationList" parameterType="string" resultMap="reservationResultSet">
+		SELECT RM.SPACE_NO, R.ORDER_ID, R.PAY_STATUS,
+			TO_CHAR(APPROVE_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "APPROVE_DATE",
+			RM.ORIGIN_NAME, RM.CHANGE_NAME, SPACE_DESCRIPTION,
+			TO_CHAR(CHECK_IN_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "CHECK_IN_DATE",
+			TO_CHAR(CHECK_OUT_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "CHECK_OUT_DATE",
+		    SPACE_TITLE
+		FROM RESERVATION R
+		JOIN MEMBER M ON (M.MEMBER_NO = R.MEMBER_NO)
+		JOIN ROOM RM ON (RM.ROOM_NO = R.ROOM_NO)
+		JOIN SPACE S ON (S.SPACE_NO = RM.SPACE_NO)
+		WHERE MEMBER_ID = #{memberId}
+		ORDER BY APPROVE_DATE DESC, PAY_STATUS ASC
+	</select>
+	
+	
+	<update id="HostRequest" parameterType="member">
+		UPDATE MEMBER
+	   	SET BANK_NAME = #{bankName}
+	      , ACCOUNT_NUMBER = #{accountNumber}
+	      , SELLER_REQUEST_YN = 'Y'
+	    WHERE MEMBER_ID = #{memberId}
+		    AND STATUS = 'N'
+	</update>
+	
+	<select id="adminSelectAllMemberListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM MEMBER
+		WHERE STATUS = 'N'
+	</select>
+	
+	<select id="adminSelectAllMember" parameterType="String" resultMap="memberResultSet">
+			SELECT MEMBER_NO, NICKNAME, MEMBER_ID, SELLER_REQUEST_YN,
+		       BANK_NAME, ACCOUNT_NUMBER,
+		       BLACKLIST_YN, STATUS 
+			FROM MEMBER
+			WHERE 
+			<choose>
+				<when test='condition == "A"'>
+					STATUS = 'N' <!-- 전체조회 -->
+				</when>
+				<when test='condition == "S"'>
+					SELLER_REQUEST_YN = 'Y' AND STATUS = 'N' <!-- 판매자 신청조회 -->
+				</when>
+				<when test='condition == "B"'> <!-- 블랙리스트 조회  -->
+					BLACKLIST_YN = 'Y' AND STATUS = 'N'
+				</when>
+				<when test='condition == "X"'> <!-- 탈퇴회원조회 -->
+					STATUS = 'Y'
+				</when>
+			</choose>
+	</select>
+	 
+	 <select id="adminMemberDetail" parameterType="_int" resultMap="memberResultSet">           
+		SELECT *
+		FROM MEMBER
+		WHERE MEMBER_NO = #{memberNo}
+	 </select>
+	 
+	 
+	 <update id="acceptRequest" parameterType="_int">
+	 	UPDATE MEMBER
+		   SET SELLER_YN = 'Y'
+		     , SELLER_REQUEST_YN = 'N'
+		WHERE MEMBER_NO = #{memberNo}
+		  AND STATUS = 'N'
+	 </update>
+	 
+	 <select id="hostSelectSpaceListCount" parameterType="_int" resultType="_int">
+	 	SELECT COUNT(*)
+		FROM ROOM R, SPACE S, MEMBER M
+		WHERE R.SPACE_NO = S.SPACE_NO
+			AND S.MEMBER_NO = M.MEMBER_NO
+			AND M.MEMBER_NO = #{memberNo}
+			AND M.STATUS = 'N'
+	 </select>
+	
+	 
+	 <select id="hostSelectSpaceInfo" parameterType="_int" resultMap="hostRoomListResultSet">
+	 	SELECT R.ROOM_NO, S.SPACE_NO, R.ROOM_TITLE, R.BED_TYPE, S.SPACE_DESCRIPTION, S.SPACE_TITLE,
+		       R.BED_COUNT, TO_CHAR(R.START_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "START_DATE",
+		       TO_CHAR(R.END_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "END_DATE", R.PEOPLE_COUNT,
+		       R.ORIGIN_NAME, R.CHANGE_NAME
+		FROM ROOM R, SPACE S, MEMBER M
+		WHERE R.SPACE_NO = S.SPACE_NO
+		AND S.MEMBER_NO = M.MEMBER_NO
+		AND M.MEMBER_NO = #{memberNo}
+		ORDER BY START_DATE DESC
+	 </select>
+	 
+	 <select id="hostReservationListCount" parameterType="_int" resultType="_int">
+	 	SELECT COUNT(*)
+		FROM RESERVATION RE, ROOM R, SPACE S, MEMBER M
+		WHERE RE.ROOM_NO = R.ROOM_NO
+			AND S.MEMBER_NO = M.MEMBER_NO
+			AND S.SPACE_NO = R.SPACE_NO
+			AND M.MEMBER_NO = #{memberNo}
+			AND RE.STATUS = 'Y'
+	 </select>
+	 
+	 <select id="hostReservationList" parameterType="_int" resultMap="reservationResultSet">
+	 	SELECT RE.ORDER_ID, S.SPACE_NO, R.ROOM_NO, M.MEMBER_NO,
+		       RE.RESERVATION_NAME, R.PEOPLE_COUNT, RE.PAY_STATUS,
+		       RE.PAYLOAD, R.ROOM_TITLE, R.BED_TYPE, 
+		       TO_CHAR(RE.APPROVE_DATE, '""YYYY"년 "MM"월 "DD"일"'),
+		       TO_CHAR(R.START_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "START_DATE",
+		       TO_CHAR(R.END_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "END_DATE",
+		       TO_CHAR(RE.CHECK_IN_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "CHECK_IN_DATE",
+		       TO_CHAR(RE.CHECK_OUT_DATE, '""YYYY"년 "MM"월 "DD"일"') AS "CHECK_OUT_DATE",
+		       R.ORIGIN_NAME, R.CHANGE_NAME
+		FROM RESERVATION RE
+		JOIN ROOM R ON (RE.ROOM_NO = R.ROOM_NO)
+		JOIN SPACE S ON (S.SPACE_NO = R.SPACE_NO)
+		JOIN MEMBER M ON (S.MEMBER_NO = M.MEMBER_NO)
+		WHERE M.MEMBER_NO = #{memberNo}
+		  AND RE.STATUS = 'Y'
+		ORDER BY RE.APPROVE_DATE ASC
+	 </select>
+   
+	 <select id="ReviewSelectListCount" parameterType="string" resultType="_int">
+	 	SELECT COUNT(*)
+		FROM SPACE_REVIEW SR, RESERVATION RE, ROOM R, SPACE S
+		WHERE SR.ORDER_ID = RE.ORDER_ID
+			AND S.SPACE_NO = R.SPACE_NO
+			AND R.ROOM_NO = RE.ROOM_NO
+			AND RE.MEMBER_NO = #{memberNo}
+	 </select>
+	 
+	 <select id="ReviewSelectList" parameterType="string" resultMap="reviewListResultSet">
+		SELECT R.ROOM_NO, SR.REVIEW_NO AS "REVIEW_NO", SR.REVIEW_STATUS AS "REVIEW_STATUS",
+		    RE.ORDER_ID AS "ORDER_ID", R.ROOM_TITLE AS "ROOM_TITLE", S.SPACE_TITLE AS "SPACE_TITLE", 
+		   SR.REVIEW_CONTENT AS "REVIEW_CONTENT",  
+		   SR.GRADE AS "GRADE", SR.CREATE_DATE AS "CREATE_DATE",
+		   R.ORIGIN_NAME AS "ORIGIN_NAME", R.CHANGE_NAME AS "CHANGE_NAME"
+		FROM SPACE_REVIEW SR, RESERVATION RE, ROOM R, SPACE S
+		WHERE SR.ORDER_ID = RE.ORDER_ID
+		AND S.SPACE_NO = R.SPACE_NO
+		AND R.ROOM_NO = RE.ROOM_NO
+		AND RE.MEMBER_NO = #{memberNo}
+		AND REVIEW_STATUS = 'Y'
+		ORDER BY CREATE_DATE DESC
+	 </select>
+	 
+	  <select id="reviewListCount" parameterType="review" resultType="_int">
+	 	SELECT COUNT(*)
+		FROM SPACE_REVIEW SR, RESERVATION RE, ROOM R, SPACE S
+		WHERE SR.ORDER_ID = RE.ORDER_ID
+			AND S.SPACE_NO = R.SPACE_NO
+			AND R.ROOM_NO = RE.ROOM_NO
+			AND RE.ORDER_ID = #{orderId}
+			AND REVIEW_STATUS = 'Y'
+		ORDER BY CREATE_DATE DESC
+	 </select>
+	 
+	 <insert id="reviewCreate" parameterType="review">
+		INSERT INTO SPACE_REVIEW(REVIEW_NO
+		                       , ORDER_ID
+		                       , REVIEW_CONTENT
+		                       , GRADE)
+		VALUES(SEQ_SRNO.NEXTVAL,
+		      #{orderId},
+		      #{reviewContent},
+		      #{grade2}) 
+	 </insert>
+	 
+	 <update id="reviewDelete" parameterType="_int">
+	 	DELETE FROM SPACE_REVIEW
+		WHERE REVIEW_NO = #{roomNo}
+	 </update>
+
+</mapper>

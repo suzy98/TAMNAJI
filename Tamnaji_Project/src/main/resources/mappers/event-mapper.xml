@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="eventMapper">
+    <resultMap id="eventResultSet" type="event">
+        <result column="EVENT_NO" property="eventNo"/>
+        <result column="EVENT_WRITER" property="eventWriter"/>
+        <result column="EVENT_TITLE" property="eventTitle"/>
+        <result column="EVENT_CONTENT" property="eventContent"/>
+        <result column="STATUS" property="status"/>
+        <result column="ORIGIN_NAME" property="originName"/>
+        <result column="CHANGE_NAME" property="changeName"/>
+        <result column="START_DATE" property="startDate"/>
+        <result column="END_DATE" property="endDate"/>
+    </resultMap>
+
+    <!--총 이벤트 갯수-->
+    <select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM EVENT
+		WHERE STATUS = 'Y'
+    </select>
+
+    <!-- 이벤트 리스트 조회-->
+    <select id="selectList" resultMap="eventResultSet">
+        SELECT EVENT_NO, EVENT_TITLE, EVENT_CONTENT, to_char(START_DATE,'yyyy-mm-dd') "START_DATE", to_char(END_DATE,'yyyy-mm-dd') "END_DATE", ORIGIN_NAME,
+        CASE WHEN <![CDATA[SYSDATE< START_DATE]]> THEN '진행 전' WHEN SYSDATE BETWEEN START_DATE AND END_DATE THEN '진행 중' ELSE '종료' END "POST"
+        FROM EVENT
+        WHERE STATUS='Y'
+        ORDER BY EVENT_NO DESC
+    </select>
+
+    <!--이벤트 작성-->
+    <insert id="insertEvent" parameterType="event">
+        INSERT INTO EVENT (EVENT_NO, EVENT_WRITER, EVENT_TITLE, EVENT_CONTENT, ORIGIN_NAME, CHANGE_NAME, START_DATE, END_DATE)
+        VALUES (SEQ_ENO.NEXTVAL,1, #{eventTitle}, #{eventContent}, #{originName}, #{changeName}, #{startDate}, #{endDate})
+    </insert>
+
+    <!-- 이벤트 삭제-->
+    <update id="deleteEvent" parameterType="_int">
+        UPDATE EVENT
+        SET STATUS='N'
+        WHERE EVENT_NO=#{eventNo}
+    </update>
+
+    <!--이벤트 상세조회-->
+    <select id="selectEvent" parameterType="_int" resultMap="eventResultSet">
+        SELECT EVENT_NO, EVENT_TITLE, EVENT_CONTENT , ORIGIN_NAME, CHANGE_NAME ,to_char(START_DATE,'yyyy-mm-dd') "START_DATE" ,to_char(END_DATE,'yyyy-mm-dd') "END_DATE" 
+        FROM EVENT 
+        WHERE EVENT_NO =#{eventNo}
+    </select>
+
+    <!--이벤트 수정-->
+    <update id="updateEvent" parameterType="event">
+        UPDATE EVENT
+        SET EVENT_TITLE = #{eventTitle}, EVENT_CONTENT = #{eventContent}, ORIGIN_NAME = #{originName}, CHANGE_NAME = #{changeName}, START_DATE=#{startDate}, END_DATE=#{endDate}
+        WHERE EVENT_NO = #{eventNo}
+    </update>
+</mapper>

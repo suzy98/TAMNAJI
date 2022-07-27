@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="spaceMapper">
+
+	<resultMap id="recommendResultSet" type="space">
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="SP_TYPE" property="spType" />
+		<result column="CATEGORY_NAME" property="categoryName" />
+		<result column="CATEGORY_DETAIL" property="categoryDetail" />
+        <result column="MEMBER_NO" property="memberNo" />
+        <result column="NICKNAME" property="nickName" />
+		<result column="SPACE_TITLE" property="spaceTitle" />
+        <result column="SPACE_SUBTITLE" property="spaceSubTitle" />
+        <result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		<result column="ADDRESS" property="address" />
+        <result column="LATITUDE" property="latitude" />
+        <result column="LONGITUDE" property="longitude" />
+		<result column="HASHTAG" property="hashtag" />
+        <result column="STATUS" property="status" />
+        <result column="COUNT" property="count" />
+        <result column="ORIGIN_NAME" property="originName" />
+        <result column="CHANGE_NAME" property="changeName" />
+        <result column="PRICE" property="price"/>
+        <result column="PHONE" property="phone" />
+        <result column="LIKECOUNT" property="likeCount" />
+        <result column="GRADEAVG" property="gradeAVG" />
+        <result column="MYLIKELIST" property="myLikeListYN" />
+        <result column="CATEGORY_DETAIL" property="categoryDetail" />        
+	</resultMap>
+	
+    <resultMap id="spaceCategoryResultSet" type="spaceCategory">
+        <result column="SP_TYPE" property="spType" />
+        <result column="CATEGORY_NAME" property="categoryName" />
+        <result column="CATEGORY_DETAIL" property="categoryDetail" />
+        <result column="ORIGIN_NAME" property="originName" />
+        <result column="CHANGE_NAME" property="changeName" />
+    </resultMap>
+    
+    <resultMap id="spaceFacilityResultSet" type="spaceFacility">
+        <result column="SF_NO" property="sfNo" />
+        <result column="FACILITY_NAME" property="facilityName" />
+        <result column="CATEGORY_DETAIL" property="categoryDetail" />
+        <result column="ORIGIN_NAME" property="originName" />
+        <result column="CHANGE_NAME" property="changeName" />
+    </resultMap>
+    
+    <resultMap id="spaceAttachmentResultSet" type="spaceAttachment">
+        <result column="SA_NO" property="saNo" />
+        <result column="SPACE_NO" property="spaceNo" />
+        <result column="STEP" property="step" />
+        <result column="ORIGIN_NAME" property="orginName" />
+        <result column="CHANGE_NAME" property="changeName" />
+    </resultMap>
+    <resultMap id="facilitySpaceResultSet" type="facilitySpace">
+        <result column="SPACE_NO" property="spaceNo"/>
+        <result column="SF_NO" property="sfNo"/>
+    </resultMap>
+    
+	<!-- parameterType이 _string가 맞나? -->
+	<select id="selectMbtiList" parameterType="String" resultMap="recommendResultSet">
+		SELECT S.SPACE_NO, S.SPACE_TITLE, S.SPACE_SUBTITLE, S.STATUS, SA.ORIGIN_NAME, SA.CHANGE_NAME
+		FROM SPACE S, SPACE_ATTACHMENT SA, SPACE_CATEGORY SC
+		WHERE S.STATUS = 'Y'
+		AND	S.SPACE_NO = SA.SPACE_NO
+		AND SA.STEP = 1
+		AND S.SP_TYPE = SC.SP_TYPE
+		AND HASHTAG LIKE '%'||#{mbti}||'%'
+	</select>
+	
+	<select id="searchListCount" parameterType="hashMap" resultType="_int">
+		select count(*)
+		FROM SPACE S, SPACE_CATEGORY SC, SPACE_ATTACHMENT SA
+		, (SELECT S.SPACE_NO, MIN(PRICE) PRICE, RO.START_DATE, RO.END_DATE
+					FROM SPACE S, ROOM RO
+			        WHERE S.SPACE_NO(+) = RO.SPACE_NO
+			        <if test='checkIn!=null and checkOut!=null and checkIn!="" and checkOut!=""'>
+		            	AND #{checkIn} BETWEEN RO.START_DATE AND RO.END_DATE
+		            	AND #{checkOut} BETWEEN RO.START_DATE AND RO.END_DATE
+		        	</if>
+		        	<if test="people!=null and people!=0">
+		            <![CDATA[AND RO.PEOPLE_COUNT >= #{people}]]>
+		        	</if>
+			        GROUP BY S.SPACE_NO, RO.START_DATE, RO.END_DATE
+			        ORDER BY 1
+            ) EEE
+			WHERE S.SPACE_NO = SA.SPACE_NO
+			    AND S.SP_TYPE = SC.SP_TYPE
+			    AND SA.STEP = 1
+			    and s.space_no = eee.space_no
+            	and (
+                    S.SPACE_TITLE LIKE '%'||#{keyword}||'%'
+                or S.SPACE_SUBTITLE LIKE '%'||#{keyword}||'%'
+                or S.SPACE_DESCRIPTION like '%'||#{keyword}||'%'
+        	    or SC.CATEGORY_DETAIL LIKE '%'||#{keyword}||'%'
+        	    or S.ADDRESS LIKE '%'||#{keyword}||'%'
+        	    or S.HASHTAG LIKE '%'||#{keyword}||'%'
+                )
+                 <if test="minPrice !=null and maxPrice!=null">
+            		AND EEE.PRICE BETWEEN #{minPrice} AND #{maxPrice}
+		        </if>
+		        <if test="category!=null">
+		            AND SC.CATEGORY_DETAIL=#{category}
+		        </if>
+		        <if test="mapCheck==1">
+		            AND S.ADDRESS LIKE '%제주시%'
+		        </if>
+		        <if test="mapCheck==2">
+		            AND S.ADDRESS LIKE '%서귀포시%'
+		        </if>
+	</select>
+	
+	<select id="searchSpaceList" parameterType="hashMap" resultMap="recommendResultSet">
+	SELECT S.SPACE_NO
+			, SC.CATEGORY_NAME
+			, SC.CATEGORY_DETAIL
+			, S.SPACE_TITLE
+			, S.SP_TYPE
+			, S.SPACE_SUBTITLE
+			, S.SPACE_DESCRIPTION
+			, S.ADDRESS
+			, S.HASHTAG
+			, SA.STEP
+			, SA.CHANGE_NAME
+			, AAA.LIKECOUNT
+			, BBB.GRADEAVG
+			<if test="memberNo != null ">
+			, CCC.MYLIKELIST
+			</if>
+			, EEE.PRICE
+		FROM SPACE S, SPACE_CATEGORY SC, SPACE_ATTACHMENT SA
+        , (SELECT S.SPACE_NO, COUNT(LL.SPACE_NO) LIKECOUNT
+							FROM LIKE_LIST LL, SPACE S
+			                WHERE LL.SPACE_NO(+) = S.SPACE_NO
+			                GROUP BY S.SPACE_NO
+			                ORDER BY 1
+			) AAA
+			, (SELECT S.SPACE_NO, NVL(ROUND(AVG(SR.GRADE), 0), 0) GRADEAVG
+							FROM SPACE_REVIEW SR, RESERVATION R, ROOM RO, SPACE S
+			                WHERE SR.ORDER_ID(+) = R.ORDER_ID
+			                    AND R.ROOM_NO(+) = RO.ROOM_NO
+			                    AND RO.SPACE_NO(+) = S.SPACE_NO
+			                GROUP BY S.SPACE_NO
+			                ORDER BY 1 
+			) BBB
+			<if test="memberNo != null ">
+			, (SELECT S.SPACE_NO, count(B.MYLIKE) MYLIKELIST 
+                FROM SPACE S LEFT OUTER JOIN (
+                                    SELECT LL.SPACE_NO, COUNT(LL.SPACE_NO) AS MYLIKE 
+                                     FROM MEMBER M, LIKE_LIST LL  
+                                    WHERE LL.MEMBER_NO(+) = M.MEMBER_NO
+                                        
+                                        	AND M.MEMBER_NO = #{memberNo} 
+                                       	
+                                    GROUP BY LL.SPACE_NO
+                            ) B 
+                            on (S.SPACE_NO = B.SPACE_NO)
+                GROUP BY S.SPACE_NO
+			) CCC
+			</if>
+			, (SELECT S.SPACE_NO, MIN(PRICE) PRICE, RO.START_DATE, RO.END_DATE
+					FROM SPACE S, ROOM RO
+			        WHERE S.SPACE_NO(+) = RO.SPACE_NO
+			        <if test='checkIn!=null and checkOut!=null and checkIn!="" and checkOut!=""'>
+		            	AND #{checkIn} BETWEEN RO.START_DATE AND RO.END_DATE
+		            	AND #{checkOut} BETWEEN RO.START_DATE AND RO.END_DATE
+		        	</if>
+		        	<if test="people!=null and people!=0">
+		            <![CDATA[AND RO.PEOPLE_COUNT >= #{people}]]>
+		        	</if>
+			        GROUP BY S.SPACE_NO, RO.START_DATE, RO.END_DATE
+			        ORDER BY 1
+            ) EEE
+			WHERE S.SPACE_NO = SA.SPACE_NO
+			    AND S.SP_TYPE = SC.SP_TYPE
+			    AND SA.STEP = 1
+                AND S.SPACE_NO(+) = AAA.SPACE_NO
+			    AND S.SPACE_NO = BBB.SPACE_NO
+				<if test="memberNo != null ">
+		        	AND S.SPACE_NO = CCC.SPACE_NO
+			    </if>
+                AND S.SPACE_NO = EEE.SPACE_NO
+            	and (
+                S.SPACE_TITLE LIKE '%'||#{keyword}||'%'
+                or S.SPACE_SUBTITLE LIKE '%'||#{keyword}||'%'
+                or S.SPACE_DESCRIPTION like '%'||#{keyword}||'%'
+        	    or SC.CATEGORY_DETAIL LIKE '%'||#{keyword}||'%'
+        	    or S.ADDRESS LIKE '%'||#{keyword}||'%'
+        	    or S.HASHTAG LIKE '%'||#{keyword}||'%'
+                )
+                <if test="minPrice !=null and maxPrice!=null">
+            		AND EEE.PRICE BETWEEN #{minPrice} AND #{maxPrice}
+		        </if>
+		        <if test="category!=null">
+		            AND SC.CATEGORY_DETAIL=#{category}
+		        </if>
+		        <if test="mapCheck==1">
+		            AND S.ADDRESS LIKE '%제주시%'
+		        </if>
+		        <if test="mapCheck==2">
+		            AND S.ADDRESS LIKE '%서귀포시%'
+		        </if>
+                
+        	ORDER BY S.SPACE_NO DESC
+	</select>
+	
+    <!-- 카테고리 조회-->
+    <select id="adminCategory" resultMap="spaceCategoryResultSet">
+        SELECT SP_TYPE, CATEGORY_NAME, CATEGORY_DETAIL
+        FROM SPACE_CATEGORY 
+    </select>
+	
+    <!-- 카테고리 생성-->
+    <insert id="adminCategoryCreate" parameterType="String">
+        INSERT INTO SPACE_CATEGORY VALUES(SEQ_SCNO.NEXTVAL, #{categoryName}, 
+         #{categoryDetail})
+    </insert>
+	
+    <!-- 카테고리 삭제-->
+    <delete id="adminCategoryDelete" parameterType="_int">
+        DELETE FROM SPACE_CATEGORY WHERE SP_TYPE=#{spType}
+    </delete>
+	
+    <!-- 카테고리 수정-->
+    <update id="adminCategoryUpdate" parameterType="spaceCategory">
+        UPDATE SPACE_CATEGORY 
+        SET CATEGORY_NAME=#{categoryName}
+        ,CATEGORY_DETAIL=#{categoryDetail}
+        WHERE SP_TYPE=#{spType}
+    </update>
+	
+    <!-- 편의시설 조회-->
+    <select id="adminFacility" resultMap="spaceFacilityResultSet">
+        SELECT *
+        FROM SPACE_FACILITY
+    </select>
+	
+    <!-- 편의시설 생성-->
+    <insert id="adminFacilityCreate" parameterType="spaceFacility">
+        INSERT INTO SPACE_FACILITY VALUES(SEQ_SFNO.NEXTVAL, #{facilityName}, #{categoryDetail}, #{originName}, #{changeName})
+    </insert>
+	
+    <!-- 편의시설 삭제-->
+    <delete id="adminFacilityDelete" parameterType="_int">
+        DELETE FROM SPACE_FACILITY WHERE SF_NO=#{sfNo}
+    </delete>
+	
+    <!-- 편의시설 수정-->
+    <update id="adminFacilityUpdate" parameterType="spaceFacility">
+        UPDATE SPACE_FACILITY
+        SET FACILITY_NAME=#{facilityName}, CATEGORY_DETAIL=#{categoryDetail}
+        WHERE SF_NO=#{sfNo}
+    </update>
+	
+    <!-- 스페이스 총 갯수-->
+    <select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM SPACE
+		WHERE STATUS = 'Y'
+    </select>
+	
+    <!-- 스페이스 관리 조회-->
+    <select id="adminSpaceSelect" resultMap="recommendResultSet">
+        SELECT SPACE_NO, sc.CATEGORY_DETAIL, m.NICKNAME, SPACE_TITLE, ADDRESS
+        FROM SPACE s
+        JOIN SPACE_CATEGORY sc USING(SP_TYPE)
+        JOIN MEMBER m USING(MEMBER_NO)
+        WHERE s.STATUS='Y'
+        ORDER BY SPACE_NO DESC
+    </select>
+	
+    <!-- 스페이스 관리자 검색-->
+    <select id="adminSpaceSearch" parameterType="hashmap" resultMap="recommendResultSet">
+        SELECT SPACE_NO, sc.CATEGORY_DETAIL, m.NICKNAME, SPACE_TITLE, ADDRESS
+        FROM SPACE s
+        JOIN SPACE_CATEGORY sc USING(SP_TYPE)
+        JOIN MEMBER m USING(MEMBER_NO)
+        WHERE s.STATUS='Y'
+        <choose>
+            <when test="keyword=='유형'">
+            AND CATEGORY_DETAIL
+            </when>
+            <when test="keyword=='주소'">
+            AND ADDRESS
+            </when>
+            <when test="keyword=='공간명'">
+            AND SPACE_TITLE  
+            </when>
+                <otherwise>
+            AND NICKNAME
+                </otherwise>
+            </choose>
+        LIKE '%' || #{search} || '%'
+        ORDER BY SPACE_NO  DESC
+    </select>
+	
+
+	<select id="selectSpaceList" resultMap="recommendResultSet" parameterType="hashmap">
+        SELECT 
+			S.SPACE_NO
+			, SC.CATEGORY_NAME
+			, SC.CATEGORY_DETAIL
+			, S.SPACE_TITLE
+			, S.SP_TYPE
+			, S.SPACE_SUBTITLE
+			, S.SPACE_DESCRIPTION
+			, S.ADDRESS
+			, S.HASHTAG
+			, SA.STEP
+			, SA.CHANGE_NAME
+			, MIN(R.PRICE) "PRICE"
+			, AAA.LIKECOUNT
+			, BBB.GRADEAVG
+			<if test="memberNo != null ">
+			, CCC.MYLIKELIST
+			</if>
+			FROM SPACE S, SPACE_CATEGORY SC, SPACE_ATTACHMENT SA, ROOM R
+			, (SELECT S.SPACE_NO, COUNT(LL.SPACE_NO) LIKECOUNT
+							FROM LIKE_LIST LL, SPACE S
+			                WHERE LL.SPACE_NO(+) = S.SPACE_NO
+			                GROUP BY S.SPACE_NO
+			                ORDER BY 2
+			) AAA
+			, (SELECT S.SPACE_NO, NVL(ROUND(AVG(SR.GRADE), 0), 0) GRADEAVG
+							FROM SPACE_REVIEW SR, RESERVATION R, ROOM RO, SPACE S
+			                WHERE SR.ORDER_ID(+) = R.ORDER_ID
+			                    AND R.ROOM_NO(+) = RO.ROOM_NO
+			                    AND RO.SPACE_NO(+) = S.SPACE_NO
+			                GROUP BY S.SPACE_NO
+			                ORDER BY 1 
+			) BBB
+			<if test="memberNo != null ">
+			, (SELECT S.SPACE_NO, count(B.MYLIKE) MYLIKELIST 
+                FROM SPACE S LEFT OUTER JOIN (
+                                    SELECT LL.SPACE_NO, COUNT(LL.SPACE_NO) AS MYLIKE 
+                                     FROM MEMBER M, LIKE_LIST LL  
+                                    WHERE LL.MEMBER_NO(+) = M.MEMBER_NO
+                                        	AND M.MEMBER_NO = #{memberNo} 
+                                    GROUP BY LL.SPACE_NO
+                            ) B 
+                            on (S.SPACE_NO = B.SPACE_NO)
+                GROUP BY S.SPACE_NO
+			) CCC
+			</if>
+			WHERE S.SPACE_NO = SA.SPACE_NO
+			    AND S.SP_TYPE = SC.SP_TYPE
+			    AND S.SPACE_NO = R.SPACE_NO
+			    AND S.SPACE_NO(+) = AAA.SPACE_NO
+			    AND S.SPACE_NO = BBB.SPACE_NO
+		        <if test="memberNo != null ">
+		        AND S.SPACE_NO = CCC.SPACE_NO
+			    </if>
+			    AND SA.STEP = 1 AND S.STATUS='Y'
+        		AND SC.CATEGORY_NAME = #{categoryName}
+        <if test="minPrice !=null and maxPrice!=null">
+            	AND R.PRICE BETWEEN #{minPrice} AND #{maxPrice}
+        </if>
+        <if test='checkIn!=null and checkOut!=null and checkIn!="" and checkOut!=""'>
+            AND #{checkIn} BETWEEN R.START_DATE AND R.END_DATE
+            AND #{checkOut} BETWEEN R.START_DATE AND R.END_DATE
+        </if>
+        <if test="category!=null">
+            AND SC.CATEGORY_DETAIL=#{category}
+        </if>
+        <if test="people!=null and people!=0">
+            <![CDATA[AND R.PEOPLE_COUNT>= #{people}]]>
+        </if>
+        <if test="mapCheck==1">
+            AND S.ADDRESS LIKE '%제주시%'
+        </if>
+        <if test="mapCheck==2">
+            AND S.ADDRESS LIKE '%서귀포시%'
+        </if>
+        	GROUP BY S.SPACE_NO
+			, SC.CATEGORY_NAME
+			, SC.CATEGORY_DETAIL
+			, S.SPACE_TITLE
+			, S.SP_TYPE
+			, S.SPACE_SUBTITLE
+			, S.SPACE_DESCRIPTION
+			, S.ADDRESS
+			, S.HASHTAG
+			, SA.STEP
+			, SA.CHANGE_NAME
+			, AAA.LIKECOUNT
+			, BBB.GRADEAVG
+			<if test="memberNo != null ">
+			, CCC.MYLIKELIST
+        	</if>
+        	ORDER BY S.SPACE_NO DESC
+	</select>
+    <!-- 스페이스 갯수 구하기~~-->
+    <select id="selectCount" parameterType="hashmap" resultType="_int">
+        SELECT COUNT(*)
+        FROM(SELECT SPACE_NO, sc.CATEGORY_NAME,sc.CATEGORY_DETAIL, SPACE_TITLE,SP_TYPE, SPACE_SUBTITLE, SPACE_DESCRIPTION,ADDRESS,HASHTAG, STEP, sa.CHANGE_NAME, MIN(PRICE) "PRICE"
+        FROM SPACE s
+        JOIN SPACE_CATEGORY sc USING(SP_TYPE)
+        JOIN SPACE_ATTACHMENT sa USING(SPACE_NO)
+        JOIN ROOM r USING(SPACE_NO)
+        WHERE s.STATUS='Y' AND STEP=1
+        AND CATEGORY_NAME=#{categoryName}
+        <if test="minPrice !=null and maxPrice!=null">
+            AND PRICE BETWEEN #{minPrice} AND #{maxPrice}
+        </if>
+        <if test='checkIn!=null and checkOut!=null and checkIn!="" and checkOut!=""'>
+            AND #{checkIn} BETWEEN START_DATE AND END_DATE
+            AND #{checkOut} BETWEEN START_DATE AND END_DATE
+        </if>
+        <if test="category!=null and category!=''">
+            AND sc.CATEGORY_DETAIL=#{category}
+        </if>
+        <if test="people!=null and people!=0">
+            <![CDATA[AND PEOPLE_COUNT>= #{people}]]>
+        </if> 
+        <if test="mapCheck==1">
+            AND ADDRESS LIKE '%제주시%'
+        </if>
+        <if test="mapCheck==2">
+            AND ADDRESS LIKE '%서귀포시%'
+        </if>
+        GROUP BY SPACE_NO, sc.CATEGORY_NAME,sc.CATEGORY_DETAIL,SPACE_TITLE,SP_TYPE, SPACE_SUBTITLE, SPACE_DESCRIPTION,ADDRESS,HASHTAG, STEP, sa.CHANGE_NAME)
+    </select>
+	
+	<select id="wishCount" parameterType="_int" resultType="_int">
+		SELECT COUNT(LL.SPACE_NO)
+				FROM LIKE_LIST LL, SPACE S
+                WHERE LL.SPACE_NO(+) = S.SPACE_NO
+                        AND LL.SPACE_NO = #{spaceNo}
+                GROUP BY S.SPACE_NO
+	</select>
+	<!-- 공간 조회수 증가 -->
+	<update id="increaseCount" parameterType="_int">
+  		UPDATE SPACE
+  		   SET COUNT = COUNT + 1
+  		 WHERE SPACE_NO = #{spaceNo}
+  		   AND STATUS = 'Y'
+  	</update>
+  	<resultMap id="spaceDetailResultSet" type="space">
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="SP_TYPE" property="spaceNo" />
+		<result column="CATEGORY_NAME" property="categoryName" />
+		<result column="CATEGORY_DETAIL" property="categoryDetail" />
+		<result column="SELLER_NAME" property="sellerName" />
+		
+		<result column="SPACE_TITLE" property="spaceTitle" />
+        <result column="SPACE_SUBTITLE" property="spaceSubTitle" />
+        <result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		
+		<result column="ADDRESS" property="address" />
+		<result column="LATITUDE" property="latitude" />
+		<result column="LONGITUDE" property="longitude" />
+		<result column="HASHTAG" property="hashtag" />
+		
+        <result column="STATUS" property="status" />
+        
+        <result column="COUNT" property="count" />
+        
+     </resultMap>
+  	<!-- 공간 상세 조회 -->
+  	<select id="selectSpace" parameterType="_int" resultMap="spaceDetailResultSet">
+		SELECT S.SPACE_NO, SC.CATEGORY_NAME, SC.CATEGORY_DETAIL, 
+				M.MEMBER_NAME AS SELLER_NAME, S.SPACE_TITLE, S.SPACE_SUBTITLE,
+				S.SPACE_DESCRIPTION, S.ADDRESS
+				, S.LATITUDE , S.LONGITUDE , S.HASHTAG , S.STATUS , S.COUNT
+		FROM SPACE S, SPACE_CATEGORY SC, MEMBER M
+		WHERE S.SPACE_NO = #{spaceNo}
+			AND S.SP_TYPE = SC.SP_TYPE
+			AND M.MEMBER_NO = S.MEMBER_NO
+			<!--  AND M.SELLER_YN = 'Y'-->
+  	</select>
+	<!-- 공간 첨부파일 조회 -->
+	<select id="selectAttachmentList" parameterType="_int" resultMap="spaceAttachmentResultSet">
+		SELECT *
+		FROM SPACE_ATTACHMENT
+		JOIN SPACE USING(SPACE_NO)
+        WHERE SPACE_NO = #{spaceNo}
+	</select>
+	<!-- 공간 편의시설 조회 -->
+	<select id="selectFacilityList2" parameterType="_int" resultMap="spaceFacilityResultSet">
+		SELECT *
+		FROM SPACE_FACILITY
+		JOIN FACILITY_SPACE USING(SF_NO)
+        WHERE SPACE_NO = #{spaceNo} 
+	</select>
+  
+      <!-- 스페이스 첨부파일 등록-->
+    <insert id="spaceAttachmentInsert" parameterType="spaceAttachment">
+        INSERT INTO SPACE_ATTACHMENT VALUES(SEQ_SANO.NEXTVAL, SEQ_SNO.CURRVAL, #{step}, #{originName}, #{changeName})
+    </insert>
+
+    <!-- 스페이스 편의시설 등록-->
+    <insert id="spaceFacilityInsert" parameterType="integer">
+        INSERT INTO FACILITY_SPACE VALUES(SEQ_SNO.CURRVAL, #{spNo})
+    </insert>
+
+    <!-- 스페이스 유형별 카테고리 조회-->
+    <select id="selectCategoryList" parameterType="string" resultMap="spaceCategoryResultSet">
+        SELECT *
+        FROM SPACE_CATEGORY
+        WHERE CATEGORY_NAME=#{categoryName}
+    </select>
+  
+  
+
+	<!-- 예약하기 버튼 클릭 시 띄워줄 스페이스 객체 생성  맵 -->
+  	<resultMap id="spaceReservationResultSet" type="space">
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="CATEGORY_NAME" property="categoryName" />
+		<result column="CATEGORY_DETAIL" property="categoryDetail" />
+		<result column="SPACE_TITLE" property="spaceTitle" />
+		<result column="SPACE_SUBTITLE" property="spaceSubTitle" />
+		<result column="SPACE_DESCRIPTION" property="spaceDescription" />
+		<result column="ADDRESS" property="address" />
+		<result column="HASHTAG" property="hashtag" />		
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+	</resultMap>
+	 
+	 
+	 
+	 <!-- 예약하기폼에서 띄워줄 공간 조회 -->
+	 <select id="spaceGet" parameterType="_int" resultMap="spaceReservationResultSet">
+	 	SELECT S.*, SA.ORIGIN_NAME AS ORIGIN_NAME, SA.CHANGE_NAME AS CHANGE_NAME, SC.*
+	 	FROM SPACE S, SPACE_ATTACHMENT SA, SPACE_CATEGORY SC, ROOM R
+	 	WHERE S.SPACE_NO = SA.SPACE_NO
+	 		AND S.SP_TYPE = SC.SP_TYPE
+	 		AND R.SPACE_NO = S.SPACE_NO
+	 		AND r.room_NO = ${roomNo}
+	 		AND R.STATUS = 'Y'
+	 		AND SA.STEP = 1
+ 	</select>
+	
+	 <resultMap id="WishListResultSet" type="space">
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="CATEGORY_DETAIL" property="categoryDetail" />
+		<result column="SPACE_TITLE" property="spaceTitle" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName" />
+	</resultMap>
+	
+	<!-- 회원에 따른 찜한목록 개수 조회 -->
+	<select id="wishListCount" parameterType="_int" resultType="_int">
+		SELECT COUNT(*)
+		FROM LIKE_LIST
+		where member_no = #{memberNo}
+	</select>
+	
+	<!-- 찜한목록 리스트 조회 -->
+	<select id='wishListGets' parameterType='_int' resultMap='WishListResultSet'>
+		SELECT S.SPACE_NO, SC.CATEGORY_DETAIL, S.SPACE_TITLE , SA.ORIGIN_NAME, SA.CHANGE_NAME
+		FROM SPACE S, SPACE_CATEGORY SC, MEMBER M, LIKE_LIST L, SPACE_ATTACHMENT SA
+		WHERE M.MEMBER_NO = L.MEMBER_NO
+			AND L.SPACE_NO = S.SPACE_NO
+			AND S.SP_TYPE = SC.SP_TYPE
+            AND S.SPACE_NO = SA.SPACE_NO
+			AND L.MEMBER_NO = #{memberNo}
+			AND SA.STEP = 1
+			AND S.STATUS = 'Y'
+	</select>
+	
+	<!-- 찜한목록이 존재하는지 검색 -->
+	<select id="wishListGet" parameterType="hashMap" resultType="_int">
+		SELECT COUNT(*)
+		FROM LIKE_LIST
+		where member_no = #{memberNo}
+		and space_no = #{spaceNo}
+	</select>
+	
+
+	<!-- 찜한목록 생성 -->
+	<insert id="wishListPost" parameterType="hashMap">
+		insert into like_list 
+		values (seq_lno.nextval, #{memberNo}, #{spaceNo})
+	</insert>
+	
+	<!-- 찜한목록 삭제 -->
+	<delete id="wishListDelete" parameterType="hashMap">
+		delete from like_list 
+		where member_no = #{memberNo}
+		and space_no = #{spaceNo}
+	</delete>
+
+	<select id="reviewCount" parameterType="_int" resultType="_int">
+		SELECT COUNT(*)
+		FROM SPACE_REVIEW SR, SPACE S, RESERVATION R, ROOM RO
+		WHERE SR.ORDER_ID = R.ORDER_ID
+        AND R.ROOM_NO = RO.ROOM_NO
+        AND RO.SPACE_NO = S.SPACE_NO
+        AND S.SPACE_NO = #{spaceNo}
+		AND SR.REVIEW_STATUS = 'Y'
+	</select>
+	
+	<resultMap id="reviewResultMap" type="spaceReview">
+		<result column="REVIEW_NO" property="reviewNo" />
+		<result column="SPACE_NO" property="spaceNo" />
+		<result column="ORDER_ID" property="orderId" />
+		<result column="REVIEW_CONTENT" property="reviewContent" />
+		<result column="REPORT_CONTENT" property="reportContent" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="REVIEW_STATUS" property="reviewStatus" />
+		<result column="GRADE" property="grade" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="NICKNAME" property="nickname" />
+	</resultMap>
+	
+	<select id="reviewGets" parameterType="_int" resultMap="reviewResultMap">
+		SELECT SR.*, M.NICKNAME, M.CHANGE_NAME, S.SPACE_NO
+		FROM SPACE_REVIEW SR, SPACE S, RESERVATION R, ROOM RO, MEMBER M
+		WHERE SR.ORDER_ID = R.ORDER_ID
+	        AND R.MEMBER_no = M.MEMBER_NO
+	        AND R.ROOM_NO = RO.ROOM_NO
+	        AND RO.SPACE_NO = S.SPACE_NO
+	        AND S.SPACE_NO = #{spaceNo}
+			AND SR.REVIEW_STATUS = 'Y'
+        ORDER BY 1 DESC
+	
+	</select>
+
+<select id="selectSpaceOne" resultMap="recommendResultSet">
+    	SELECT * FROM SPACE
+   		WHERE SPACE_NO=(SELECT LAST_NUMBER
+    	FROM USER_SEQUENCES
+		WHERE SEQUENCE_NAME='SEQ_SNO')-1
+   	</select>
+
+    <select id="selectFacilityList" parameterType="string" resultMap="spaceFacilityResultSet">
+        SELECT * 
+        FROM SPACE_CATEGORY
+        JOIN SPACE_FACILITY sf USING(CATEGORY_DETAIL)
+        WHERE CATEGORY_NAME=#{categoryName}
+    </select>
+    <!-- 스페이스 카테고리 편의시설 조회-->
+    <select id="spaceFacilityList" parameterType="_int" resultMap="spaceFacilityResultSet">
+        SELECT SF_NO, FACILITY_NAME, CATEGORY_DETAIL
+        FROM SPACE_FACILITY 
+        JOIN SPACE_CATEGORY USING(CATEGORY_DETAIL)
+        WHERE SP_TYPE =#{spType}
+    </select>
+
+    <!-- 스페이스 등록-->
+    <insert id="spaceInsert" parameterType="hashmap">
+         INSERT INTO SPACE 
+        VALUES(SEQ_SNO.NEXTVAL
+        , #{spType}
+        , #{memberNo}
+        , #{spaceTitle}
+        , #{spaceSubTitle}
+        , #{spaceDescription}
+        , #{address}
+        , #{phone}
+        , #{latitude}
+        , #{longitude}
+        , #{hashtag}
+        ,'Y'
+        , DEFAULT)
+    </insert>
+
+    <!--호스트 공간 조회-->
+    <select id="hostSpaceList" parameterType="_int" resultMap="recommendResultSet">
+        SELECT * FROM SPACE 
+        JOIN SPACE_ATTACHMENT sa USING(SPACE_NO)
+        WHERE STATUS='Y' AND STEP=1 AND MEMBER_NO =#{memberNo}
+        ORDER BY SPACE_NO DESC
+    </select>
+    <!-- 호스트 공간 개수 조회-->
+    <select id="selectHostListCount" parameterType="_int" resultType="_int">
+        SELECT COUNT(*) FROM SPACE WHERE STATUS='Y' AND MEMBER_NO =#{memberNo}
+    </select>
+    <!--호스트 공간 수정 폼-->
+    <select id="spaceUpdateForm" parameterType="_int" resultMap="recommendResultSet">
+        SELECT * FROM SPACE WHERE SPACE_NO=#{sno}
+    </select>
+    <!-- 호스트 공간 수정-->
+    <update id="spaceUpdate" parameterType="space">
+        UPDATE SPACE
+        SET SPACE_TITLE=#{spaceTitle}, SPACE_SUBTITLE=#{spaceSubTitle}, SPACE_DESCRIPTION=#{spaceDescription}, ADDRESS=#{address}, PHONE=#{phone}, HASHTAG=#{hashtag}
+        WHERE SPACE_NO=#{spaceNo}
+    </update>
+    <!-- 호스트 공간 첨부파일 수정-->
+    <update id="spaceAttacmentUpdate" parameterType="spaceAttachment">
+        UPDATE SPACE_ATTACHMENT
+        SET ORIGIN_NAME=#{originName}, CHANGE_NAME=#{changeName}
+        WHERE SA_NO=#{saNo}
+    </update>
+    <!-- 호스트 공간 편의시설 수정-->
+    <insert id="spaceFacilityUpdate" parameterType="facilitySpace">
+        INSERT INTO FACILITY_SPACE VALUES(#{spaceNo}, #{sfNo}) 
+    </insert>
+    <delete id="spaceFacilityDelete" parameterType="space">
+        DELETE FROM FACILITY_SPACE
+        WHERE SPACE_NO=#{spaceNo}
+    </delete>
+</mapper>

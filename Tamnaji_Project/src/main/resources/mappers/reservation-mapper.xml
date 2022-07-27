@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="reservationMapper">
+
+	<resultMap id="reservationResultSet" type="reservation">
+		<result column="ORDER_ID" property="orderId" />		
+		<result column="PAYMENT_METHOD" property="paymentMethod" />		
+		<result column="TID" property="tid" />		
+		<result column="ROOM_TITLE" property="roomTitle" />		
+		<result column="SPACE_TITLE" property="spaceTitle" />		
+
+		<result column="SPACE_ROOM_TITLE" property="spaceRoomTitle" />		
+		<result column="MEMBER_ID" property="memberWriter" />		
+		<result column="SELLER_NAME" property="sellerName" />
+		
+		<result column="SELLER_PHONE" property="sellerPhone" />
+		<result column="PHONE" property="phone" />
+	 	<result column="EMAIL" property="email" />
+		<result column="BANK_NAME" property="bankName" />
+		<result column="ACCOUNT_NAME" property="accountName" />
+		<result column="ACCOUNT_NUMBER" property="accountNumber" />
+		<result column="ADDRESS" property="address" />
+		
+		<result column="CHECK_IN_DATE" property="checkInDate" />		
+		<result column="CHECK_OUT_DATE" property="checkOutDate" />		
+		<result column="STAY_PERIOD" property="stayPeriod" />		
+		<result column="RESERVATION_NAME" property="reservationName" />		
+		<result column="PEOPLE_COUNT" property="peopleCount" />		
+		<result column="PAYMENT_TYPE" property="paymentType" />		
+		<result column="PRICE" property="price" />		
+		<result column="STATUS" property="status" />		
+		<result column="PAY_STATUS" property="payStatus" />		
+		<result column="PAYLOAD" property="payload" />
+		<result column="APPROVE_DATE" property="approveDate" />
+		<result column="CANCEL_DATE" property="cancelDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="CHANGE_NAME" property="changeName"/>
+	</resultMap>
+	
+	<insert id="memberBankPut" parameterType="hashMap">
+		UPDATE MEMBER
+		SET BANK_NAME = #{order.bankName}
+		, ACCOUNT_NUMBER = #{order.accountNumber}
+		WHERE MEMBER_NO = #{order.memberNo}
+	</insert>
+	
+	<insert id="reservationPost" parameterType="hashMap">
+		INSERT INTO RESERVATION 
+				(ORDER_ID
+				, PAYMENT_METHOD
+				<if test="order.paymentMethod == '카카오페이' ">
+				, TID
+				</if>
+				, ROOM_NO
+				, MEMBER_NO
+				, CHECK_IN_DATE
+				, CHECK_OUT_DATE
+				, STAY_PERIOD
+				, RESERVATION_NAME
+				, PEOPLE_COUNT
+				<if test="order.paymentMethod == '무통장입금' ">
+				, PAYMENT_TYPE
+				, PAY_STATUS
+				</if>
+				, EMAIL
+				, PHONE
+				, BANK_NAME
+				, ACCOUNT_NAME
+				, ACCOUNT_NUMBER
+				, PRICE
+				, PAYLOAD
+				, STATUS )
+		VALUES ( #{order.orderId}
+				, #{order.paymentMethod}
+				<if test="order.paymentMethod == '카카오페이' ">
+				, #{order.tid}
+				</if>
+				, #{order.roomNo}
+				, #{order.MemberNo}
+				, TO_DATE(#{order.checkInDate}, 'YYYYMMDD')
+				, TO_DATE(#{order.checkOutDate}, 'YYYYMMDD')
+				, #{order.quantity}
+				, #{order.reservationName}
+				, #{order.peopleCount}
+				<if test="order.paymentMethod == '무통장입금' ">
+				, '무통장입금'
+				, #{order.payStatus}
+				</if>
+				, #{order.email}
+				, #{order.phone}
+				, #{order.bankName}
+				, #{order.accountName}
+				, #{order.accountNumber}
+				, #{order.total_amount}
+				, #{order.payload}
+				<if test="order.paymentMethod == '카카오페이'">
+				, 'N'
+				</if>
+				<if test="order.paymentMethod == '무통장입금'">
+				, 'Y'
+				</if>
+				)
+	</insert>
+	
+	<select id="payGet" parameterType="string" resultMap="reservationResultSet">
+		SELECT R.ORDER_ID
+			, R.PAYMENT_METHOD
+			, R.TID
+			, S.SPACE_TITLE
+			, RO.ROOM_TITLE
+			, ( S.SPACE_TITLE || ' ' || RO.ROOM_TITLE) SPACE_ROOM_TITLE
+			, RO.BED_TYPE
+			, RO.BED_COUNT
+			, S.SPACE_TITLE
+			, M.MEMBER_ID
+			, TO_CHAR(R.CHECK_IN_DATE, 'DL') as CHECK_IN_DATE
+			, TO_CHAR(R.CHECK_OUT_DATE, 'DL') as CHECK_OUT_DATE 
+			, R.STAY_PERIOD
+			, R.RESERVATION_NAME
+			, R.PEOPLE_COUNT 
+			, R.PAYMENT_TYPE
+			, R.PRICE
+			, R.STATUS
+			, R.EMAIL
+			, R.PHONE
+			, R.BANK_NAME
+			, R.ACCOUNT_NAME
+			, R.ACCOUNT_NUMBER
+			, S.ADDRESS
+			, S.PHONE AS SELLER_PHONE
+
+			, R.PAY_STATUS
+			, R.PAYLOAD
+			, TO_CHAR(R.APPROVE_DATE, 'DL') as APPROVE_DATE
+			, TO_CHAR(R.CANCEL_DATE, 'DL') as CANCEL_DATE
+			, RO.ORIGIN_NAME
+			, RO.CHANGE_NAME
+			, AA.MEMBER_NAME AS SELLER_NAME 
+		FROM RESERVATION R, SPACE S, MEMBER M, ROOM RO, 
+			( SELECT M.MEMBER_NAME, RR.ORDER_ID
+                    FROM RESERVATION RR, ROOM RORO, SPACE S, MEMBER M
+                        WHERE RR.ROOM_NO = RORO.ROOM_NO
+                        AND RORO.SPACE_NO = S.SPACE_NO
+                        AND S.MEMBER_NO = M.MEMBER_NO
+             ) AA
+		WHERE R.ROOM_NO = RO.ROOM_NO
+			AND AA.ORDER_ID = R.ORDER_ID
+			AND RO.SPACE_NO = S.SPACE_NO
+			AND R.MEMBER_NO = M.MEMBER_NO
+			AND	R.ORDER_ID = #{orderId}
+	</select>
+	
+	<update id="payPut" parameterType="approveVO">
+		UPDATE RESERVATION
+		SET PAYMENT_TYPE = #{payment_method_type}
+		, CHECK_IN_DATE = TO_DATE(#{checkInDate}, 'YYYYMMDD')
+		, CHECK_OUT_DATE = TO_DATE(#{checkOutDate}, 'YYYYMMDD')
+		, PRICE = #{amount.total}
+		, STAY_PERIOD = #{quantity}
+		, STATUS = 'Y'
+		, PAY_STATUS = '결제완료'
+		, APPROVE_DATE = #{approved_at}
+		WHERE ORDER_ID = #{partner_order_id}
+	</update>
+	
+	<update id="payDelete" parameterType="cancelVO">
+		UPDATE RESERVATION
+		SET PAY_STATUS = '결제취소'
+		, STATUS = 'N'
+		, CANCEL_DATE = #{canceled_at}
+		WHERE ORDER_ID = #{partner_order_id}
+	</update>
+	
+	
+	
+	<update id="depositDelete" parameterType="string">
+		UPDATE RESERVATION
+		SET PAY_STATUS = '결제취소'
+		, STATUS = 'N'
+		, CANCEL_DATE = SYSDATE
+		WHERE ORDER_ID = #{orderId}
+	</update>
+	
+	
+	
+	<select id="adminReservationCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM RESERVATION
+		WHERE 
+		<if test="payStatus == 'NNNNN' ">
+			PAY_STATUS = '결제취소'
+		</if>
+		<if test="payStatus != 'NNNNN' ">
+			PAY_STATUS != '결제취소'
+		</if>
+	</select>
+	
+	<select id="adminReservationGets" parameterType="hashMap" resultMap="reservationResultSet">
+SELECT R.ORDER_ID
+			, R.PAYMENT_METHOD
+			, S.SPACE_TITLE
+			, RO.ROOM_TITLE
+            , AA.MEMBER_NAME AS SELLER_NAME 
+			, M.MEMBER_ID
+			, TO_CHAR(R.CHECK_IN_DATE, 'DL') as CHECK_IN_DATE
+			, TO_CHAR(R.CHECK_OUT_DATE, 'DL') as CHECK_OUT_DATE
+			, R.RESERVATION_NAME
+			, R.PAYMENT_TYPE
+			, R.EMAIL
+			, R.PHONE
+			, S.PHONE AS SELLER_PHONE 
+			, R.PRICE
+			, R.STATUS
+			, R.PAY_STATUS
+			, TO_CHAR(R.APPROVE_DATE, 'DL') as APPROVE_DATE
+			, TO_CHAR(R.CANCEL_DATE, 'DL') as CANCEL_DATE
+		FROM RESERVATION R, SPACE S, MEMBER M, ROOM RO, 
+                    (SELECT M.MEMBER_NAME, RR.ORDER_ID
+                    FROM RESERVATION RR, ROOM RORO, SPACE S, MEMBER M
+                        WHERE RR.ROOM_NO = RORO.ROOM_NO
+                        AND RORO.SPACE_NO = S.SPACE_NO
+                        AND S.MEMBER_NO = M.MEMBER_NO
+                        <if test="payStatus == 'NNNNN' ">
+							AND rr.pay_status = '결제취소'
+						</if>
+						<if test="payStatus != 'NNNNN' ">
+							AND rr.pay_status != '결제취소'
+						</if>
+             ) AA
+		WHERE R.ORDER_ID = AA.ORDER_ID
+            AND R.ROOM_NO = RO.ROOM_NO
+             AND RO.SPACE_NO = S.SPACE_NO
+             AND R.MEMBER_NO = M.MEMBER_NO
+			<if test="payStatus == 'NNNNN' ">
+				AND r.pay_status = '결제취소'
+			</if>
+			<if test="payStatus != 'NNNNN' ">
+				AND r.pay_status != '결제취소'
+			</if>
+		ORDER BY R.ORDER_ID DESC
+	</select>
+	
+	
+	<select id="adminReservationGet" parameterType="string" resultMap="reservationResultSet">
+		SELECT R.*, S.*, M.*, SC.*, RO.*
+		FROM RESERVATION R, SPACE S, SPACE_CATEGORY SC, MEMBER M, ROOM RO
+		WHERE R.ROOM_NO =RO.ROOM_NO
+			AND RO.SPACE_NO = S.SPACE_NO
+			AND R.MEMBER_NO = M.MEMBER_NO
+			AND S.SP_TYPE = SC.SP_TYPE
+			AND R.ORDER_ID = #{orderId}
+	</select>
+	
+	<select id="reservedDate" parameterType="_int" resultMap="reservationResultSet">
+		SELECT TO_CHAR(CHECK_IN_DATE, 'YYYY-MM-DD') "CHECK_IN_DATE",
+				TO_CHAR(CHECK_OUT_DATE, 'YYYY-MM-DD') "CHECK_OUT_DATE"
+		FROM RESERVATION
+		WHERE ROOM_NO = #{roomNo}
+	</select>
+	
+	<update id="reservationPut" parameterType="reservation">
+		UPDATE RESERVATION
+		SET PHONE = #{phone}
+		, EMAIL = #{email}
+		WHERE ORDER_ID = #{orderId}
+	</update>
+	
+	<update id="depositPut" parameterType="string">
+		UPDATE RESERVATION
+		SET PAY_STATUS = '결제완료'
+		, STATUS = 'Y'
+		, APPROVE_DATE = SYSDATE
+		WHERE ORDER_ID = #{orderId}
+	</update>
+</mapper>

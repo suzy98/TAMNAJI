@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-config.dtd" >
+<configuration>
+
+	<settings>
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="com.kh.tamnaji.member.model.vo.Member" alias="member" />
+		<typeAlias type="com.kh.tamnaji.board.model.vo.Board" alias="board" />
+        <typeAlias type="com.kh.tamnaji.event.model.vo.Event" alias="event" />
+        <typeAlias type="com.kh.tamnaji.board.model.vo.Notice" alias="notice" />
+		<typeAlias type="com.kh.tamnaji.board.model.vo.BoardAttachment" alias="boardAttachment" />
+		<typeAlias type="com.kh.tamnaji.space.model.vo.Space" alias="space" />
+		<typeAlias type="com.kh.tamnaji.room.model.vo.RoomVO" alias="roomVO" />
+		<typeAlias type="com.kh.tamnaji.space.model.vo.SpaceCategory" alias="spaceCategory" />
+        <typeAlias type="com.kh.tamnaji.space.model.vo.SpaceFacility" alias="spaceFacility" />
+		<typeAlias type="com.kh.tamnaji.reservation.model.vo.Reservation" alias="reservation" />
+		<typeAlias type="com.kh.tamnaji.reservation.model.vo.KakaoPayApproveVO" alias="approveVO" />
+		<typeAlias type="com.kh.tamnaji.reservation.model.vo.KakaoPayCancelVO" alias="cancelVO" />
+		<typeAlias type="com.kh.tamnaji.reply.model.vo.Reply" alias="reply" />
+		<typeAlias type="com.kh.tamnaji.member.model.vo.LikeList" alias="likelist" />
+		<typeAlias type="com.kh.tamnaji.chat.model.vo.ChatMessage" alias="chatMessage" />
+		<typeAlias type="com.kh.tamnaji.chat.model.vo.ChatRoom" alias="chatRoom" />
+        <typeAlias type="com.kh.tamnaji.space.model.vo.SpaceReview" alias="spaceReview" />
+        <typeAlias type="com.kh.tamnaji.member.model.vo.Review" alias="review" />
+        <typeAlias type="com.kh.tamnaji.spaceAttachment.model.vo.SpaceAttachment" alias="spaceAttachment" />
+        <typeAlias type="com.kh.tamnaji.space.model.vo.FacilitySpace" alias="facilitySpace" />
+	</typeAliases>
+	<!-- 
+		유의사항 : 미리 typeAlias 를 등록해두려면 해당 클래스가 진짜 존재하고 있는 상태여야 함 
+				(ClassNotFoundException 발생)
+	-->
+	
+	<!-- 
+		environment, dataSource 에 기술했던 DB 연결 관련 정보 설정은
+		root-context.xml 에 작성할 예정
+		=> DB 등록은 서버 연동과 동시에 이루어져야되기 때문에
+		서버 스타트와 동시에 바로 읽혀지는 root-context.xml 기술한다.
+	-->
+	
+	<mappers>
+		<mapper resource="/mappers/member-mapper.xml" />
+		<mapper resource="/mappers/board-mapper.xml" />
+        <mapper resource="/mappers/event-mapper.xml"/>
+		<mapper resource="/mappers/space-mapper.xml" />
+		<mapper resource="/mappers/room-mapper.xml" />
+		<mapper resource="/mappers/reservation-mapper.xml" />
+		<mapper resource="/mappers/chat-mapper.xml" />
+		<mapper resource="/mappers/notice-mapper.xml" />
+	</mappers>
+
+</configuration>
